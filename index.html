@@ -1478,7 +1478,7 @@ function renderMonthlyTable(projs){
       <td><div class="td-main">${term.client||'-'}</div><div class="td-sub">${term.salesName||''}</div></td>
       <td style="font-size:13px">${term.label||'-'}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px;${isOverdue?'color:var(--red)':''}">${fmtDate(term.dueDate)}${isOverdue?' ⚠️':''}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600">Rp ${fmtIDR(term.amount)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;white-space:nowrap">Rp ${fmtIDR(term.amount)}</td>
       <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;${s.style}">${s.label}</span></td>
       <td style="font-size:12px;color:var(--text2);max-width:160px">${term.note||'-'}</td>
       <td>
@@ -1943,7 +1943,7 @@ function renderProjects(){
             return `<tr style="${isOver?'background:rgba(239,68,68,.04)':''}">
               <td style="padding:9px 12px;font-size:13px">${term.label||'-'}</td>
               <td style="padding:9px 12px;font-size:12px;font-family:'JetBrains Mono',monospace;${isOver?'color:var(--red)':''}">${fmtDate(term.dueDate)}${isOver?' ⚠️':''}</td>
-              <td style="padding:9px 12px;font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace">Rp ${fmtIDR(term.amount)}</td>
+              <td style="padding:9px 12px;font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">Rp ${fmtIDR(term.amount)}</td>
               <td style="padding:9px 12px"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;${s.style}">${s.label}</span></td>
               ${canEdit?`<td style="padding:9px 12px">
                 <select style="background:var(--card2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px;font-family:'Sora',sans-serif;outline:none" onchange="updateTermStatus('${p.id}','${term.id}',this.value)">
