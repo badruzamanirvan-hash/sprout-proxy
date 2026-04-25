@@ -1531,10 +1531,10 @@ function renderMonthlyMatrix(){
     const {received,invoice,pending}=amounts;
     if(!received&&!invoice&&!pending) return `<td class="matrix-month-col matrix-cell-empty">—</td>`;
     let parts=[];
-    if(received) parts.push(`<div class="matrix-cell-received" style="padding:2px 6px;border-radius:4px;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace">Rp ${fmtIDR(received)}</div>`);
-    if(invoice)  parts.push(`<div class="matrix-cell-invoice" style="padding:2px 6px;border-radius:4px;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace">Rp ${fmtIDR(invoice)}</div>`);
-    if(pending)  parts.push(`<div class="matrix-cell-pending" style="padding:2px 6px;border-radius:4px;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace">Rp ${fmtIDR(pending)}</div>`);
-    return `<td class="matrix-month-col" style="vertical-align:top;padding:8px 12px">${parts.join('')}</td>`;
+    if(received) parts.push(`<span class="matrix-cell-received" style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">Rp ${fmtIDR(received)}</span>`);
+    if(invoice)  parts.push(`<span class="matrix-cell-invoice" style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">Rp ${fmtIDR(invoice)}</span>`);
+    if(pending)  parts.push(`<span class="matrix-cell-pending" style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">Rp ${fmtIDR(pending)}</span>`);
+    return `<td class="matrix-month-col" style="vertical-align:middle;padding:8px 12px;white-space:nowrap">${parts.join(' ')}</td>`;
   }
 
   // Header row
@@ -1649,7 +1649,7 @@ function downloadMatrixPDF(){
     if(received) parts.push(`<div class="c-received">Rp ${fmtIDR(received)}</div>`);
     if(invoice)  parts.push(`<div class="c-invoice">Rp ${fmtIDR(invoice)}</div>`);
     if(pending)  parts.push(`<div class="c-pending">Rp ${fmtIDR(pending)}</div>`);
-    return parts.join('');
+    return parts.join(' ');
   }
 
   function monthTotals(month,status){
