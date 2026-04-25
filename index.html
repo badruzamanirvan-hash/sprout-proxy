@@ -1559,10 +1559,10 @@ function renderMonthlyMatrix(){
         <div style="font-weight:600;font-size:13px">${p.client||'-'}</div>
         <div style="font-size:11px;color:var(--text2)">${p.salesName||''}</div>
       </td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--orange)">Rp ${fmtIDR(totalValue)}</td>
+     <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--orange);white-space:nowrap">Rp ${fmtIDR(totalValue)}</td>
       ${monthCols.map(m=>cellHTML(projMonthAmounts(p,m))).join('')}
-      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--green)">Rp ${fmtIDR(totalReceived)}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:${sisa<=0?'var(--green)':'var(--yellow)'}">Rp ${fmtIDR(sisa)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--green);white-space:nowrap">Rp ${fmtIDR(totalReceived)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:${sisa<=0?'var(--green)':'var(--yellow)'};white-space:nowrap">Rp ${fmtIDR(sisa)}</td>
     </tr>`;
   });
 
