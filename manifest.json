@@ -1,7 +1,7 @@
 {
   "name": "Sprout Sales Tracker",
   "short_name": "Sprout Sales",
-  "description": "Internal Sales Tracking Tool",
+  "description": "Internal Sales Tracking Tool for Sprout.co.id",
   "start_url": "https://badruzamanirvan-hash.github.io/sprout-sales-tracker/",
   "scope": "https://badruzamanirvan-hash.github.io/sprout-sales-tracker/",
   "display": "standalone",
