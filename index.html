@@ -622,7 +622,15 @@ function showToastGlobal(msg,type){ showToast(msg,type); }
 
       <!-- Monthly Payment Detail Table -->
       <div style="margin-bottom:20px">
-        <div class="section-title" style="margin-top:0">Payment Detail</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="section-title" style="margin:0">Payment Detail</div>
+          <select id="payment-status-filter" onchange="renderProjects()" style="width:140px;padding:6px 10px;font-size:12px">
+            <option value="Invoice Sent">Invoice Sent</option>
+            <option value="Pending">Pending</option>
+            <option value="Received">Received</option>
+            <option value="">All</option>
+          </select>
+        </div>
         <div class="table-wrap"><div id="monthly-payment-table"></div></div>
       </div>
 
@@ -1463,8 +1471,15 @@ function renderMonthlyTable(projs){
     document.getElementById('monthly-payment-table').innerHTML=`<div class="empty-state" style="padding:24px"><div class="icon">📅</div><p>Belum ada payment term.</p></div>`;
     return;
   }
+  // Filter by status dropdown (default: Invoice Sent)
+  const statusFilter=document.getElementById('payment-status-filter')?.value??'Invoice Sent';
+  const filtered=statusFilter?allTerms.filter(t=>t.status===statusFilter):allTerms;
+  if(!filtered.length){
+    document.getElementById('monthly-payment-table').innerHTML=`<div class="empty-state" style="padding:24px"><div class="icon">📅</div><p>Tidak ada payment dengan status "${statusFilter}".</p></div>`;
+    return;
+  }
   // Sort by date
-  const sorted=[...allTerms].sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1);
+  const sorted=[...filtered].sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1);
   const t=tod();
   let html=`<table>
     <thead><tr>
