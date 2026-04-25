@@ -1586,9 +1586,9 @@ function renderMonthlyMatrix(){
     <td></td>
     ${monthCols.map(m=>{
       const v=monthTotals(m,'Received');
-      return `<td class="matrix-month-col" style="color:#86EFAC;font-family:'JetBrains Mono',monospace;font-size:12px">${v?'Rp '+fmtIDR(v):'—'}</td>`;
+      return `<td class="matrix-month-col" style="color:#86EFAC;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${v?'Rp '+fmtIDR(v):'—'}</td>`;
     }).join('')}
-    <td style="color:#86EFAC;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700">Rp ${fmtIDR(totalAllReceived)}</td>
+    <td style="color:#86EFAC;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;white-space:nowrap">Rp ${fmtIDR(totalAllReceived)}</td>
     <td></td>
   </tr>`;
 
@@ -1598,7 +1598,7 @@ function renderMonthlyMatrix(){
     <td></td>
     ${monthCols.map(m=>{
       const v=monthTotals(m,'Invoice Sent');
-      return `<td class="matrix-month-col" style="color:#FDE047;font-family:'JetBrains Mono',monospace;font-size:12px">${v?'Rp '+fmtIDR(v):'—'}</td>`;
+      return `<td class="matrix-month-col" style="color:#FDE047;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${v?'Rp '+fmtIDR(v):'—'}</td>`;
     }).join('')}
     <td></td><td></td>
   </tr>`;
@@ -1609,7 +1609,7 @@ function renderMonthlyMatrix(){
     <td></td>
     ${monthCols.map(m=>{
       const v=monthTotals(m,'Pending');
-      return `<td class="matrix-month-col" style="color:#94A3B8;font-family:'JetBrains Mono',monospace;font-size:12px">${v?'Rp '+fmtIDR(v):'—'}</td>`;
+      return `<td class="matrix-month-col" style="color:#94A3B8;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${v?'Rp '+fmtIDR(v):'—'}</td>`;
     }).join('')}
     <td></td><td></td>
   </tr>`;
