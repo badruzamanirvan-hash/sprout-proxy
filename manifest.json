@@ -3,7 +3,7 @@
   "short_name": "Sprout Sales",
   "description": "Internal Sales Tracking Tool for Sprout.co.id",
   "start_url": "https://badruzamanirvan-hash.github.io/sprout-proxy/", 
-  "scope": "https://badruzamanirvan-hash.github.io/sprout-proxy1",
+  "scope": "https://badruzamanirvan-hash.github.io/sprout-proxy/",
   "display": "standalone",
   "background_color": "#0B1628",
   "theme_color": "#0B1628",
