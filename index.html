@@ -161,6 +161,11 @@
   }
   ::-webkit-scrollbar{width:5px;}
   ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;}
+  .pin-row{display:flex;gap:10px;justify-content:center;margin-top:4px;}
+  .pin-box{width:46px!important;height:54px;text-align:center;font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;border-radius:10px;border:2px solid var(--border2);background:rgba(255,255,255,0.06);color:var(--text);padding:0;transition:border .2s;-moz-appearance:textfield;}
+  .pin-box::-webkit-outer-spin-button,.pin-box::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;}
+  .pin-box:focus{border-color:var(--orange);outline:none;background:rgba(249,115,22,0.06);}
+  .pin-box.filled{border-color:var(--orange2);}
 </style>
 </head>
 <body>
@@ -472,8 +477,15 @@ function showToastGlobal(msg,type){ showToast(msg,type); }
       <input type="text" id="login-name" placeholder="Masukkan nama lengkap...">
     </div>
     <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <label style="text-align:center;display:block">PIN</label>
+      <div class="pin-row" id="pin-row">
+        <input class="pin-box" type="number" min="0" max="9" inputmode="numeric">
+        <input class="pin-box" type="number" min="0" max="9" inputmode="numeric">
+        <input class="pin-box" type="number" min="0" max="9" inputmode="numeric">
+        <input class="pin-box" type="number" min="0" max="9" inputmode="numeric">
+        <input class="pin-box" type="number" min="0" max="9" inputmode="numeric">
+        <input class="pin-box" type="number" min="0" max="9" inputmode="numeric">
+      </div>
     </div>
     <div id="login-error" class="error-msg"></div>
     <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="doLogin()">Masuk →</button>
@@ -916,7 +928,8 @@ function doLogout(){
   document.getElementById('breakdown-wrap').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
-  document.getElementById('login-password').value='';
+  document.querySelectorAll('.pin-box').forEach(b=>{b.value='';b.classList.remove('filled');});
+  document.querySelectorAll('.pin-box')[0]?.focus();
   document.getElementById('login-error').textContent='';
 }
 
@@ -998,11 +1011,11 @@ function setMemberPasswords(obj){} // no-op, handled via DB.updateMember
 async function doLogin(){
   const role=document.getElementById('login-role').value;
   const name=document.getElementById('login-name').value.trim();
-  const pass=document.getElementById('login-password').value;
+  const pass=[...document.querySelectorAll('.pin-box')].map(b=>b.value).join('');
   const err=document.getElementById('login-error');
   err.textContent='';
 
-  if(!pass){err.textContent='Masukkan password';return;}
+  if(pass.length<6){err.textContent='Masukkan 6 digit PIN';return;}
 
   if(role==='admin'){
     const ok=await verifyPasswordViaWorker('admin',pass);
@@ -2265,6 +2278,29 @@ function exportCSV(){
 
 // ===== BOOT — load all data from Airtable on page load =====
 window.addEventListener('DOMContentLoaded', ()=>{
+  // PIN box behaviour
+  const boxes=[...document.querySelectorAll('.pin-box')];
+  boxes.forEach((box,i)=>{
+    box.addEventListener('input',()=>{
+      box.value=box.value.replace(/[^0-9]/g,'').slice(-1);
+      box.classList.toggle('filled',!!box.value);
+      if(box.value && i<boxes.length-1) boxes[i+1].focus();
+      if(boxes.every(b=>b.value)) doLogin();
+    });
+    box.addEventListener('keydown',e=>{
+      if(e.key==='Backspace'&&!box.value&&i>0){ boxes[i-1].value=''; boxes[i-1].classList.remove('filled'); boxes[i-1].focus(); }
+      if(e.key==='Enter') doLogin();
+    });
+    box.addEventListener('focus',()=>box.select());
+    box.addEventListener('paste',e=>{
+      e.preventDefault();
+      const digits=(e.clipboardData.getData('text').replace(/[^0-9]/g,'')).slice(0,6);
+      digits.split('').forEach((d,j)=>{ if(boxes[j]){boxes[j].value=d;boxes[j].classList.add('filled');} });
+      boxes[Math.min(digits.length,5)].focus();
+      if(digits.length===6) doLogin();
+    });
+  });
+
   // Pre-load members so login works immediately
   if(WORKER_URL && !/YOUR-WORKER-SUBDOMAIN/.test(WORKER_URL)){
     showGlobalLoader(true);
