@@ -910,6 +910,10 @@ let fuFilter = false;
 
 function doLogout(){
   CU=null;
+  // Reset all nav to clean default before next login
+  ['nav-dashboard','nav-activity','nav-add-activity','nav-projects'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+  ['nav-add-project','nav-members','nav-settings','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('breakdown-wrap').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('login-password').value='';
