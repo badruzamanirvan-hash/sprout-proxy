@@ -933,7 +933,11 @@ function setupUI(){
         </div>`;
   }
 
-  // Finance: hide nav items not relevant to them
+  // Reset all nav items to default state first (fixes stale DOM after logout)
+  ['nav-dashboard','nav-activity','nav-add-activity','nav-projects'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+  ['nav-add-project','nav-members','nav-settings','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+
+  // Finance: only show Project Tracking
   if(CU.role==='finance'){
     ['nav-dashboard','nav-activity','nav-add-activity'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   } else {
