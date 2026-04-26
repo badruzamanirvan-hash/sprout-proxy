@@ -460,8 +460,9 @@ function showToastGlobal(msg,type){ showToast(msg,type); }
     <div class="login-sub">Login untuk melanjutkan ke Sales Tracker</div>
     <div class="form-group">
       <label>Role</label>
-      <select id="login-role" onchange="document.getElementById('name-group').style.display=this.value==='sales'?'block':'none'">
+      <select id="login-role" onchange="document.getElementById('name-group').style.display=(this.value==='sales'||this.value==='finance')?'block':'none'">
         <option value="sales">Sales</option>
+        <option value="finance">Finance</option>
         <option value="head">Head of Sales</option>
         <option value="admin">Admin</option>
       </select>
@@ -701,6 +702,7 @@ function showToastGlobal(msg,type){ showToast(msg,type); }
           <div class="form-group"><label>Role *</label>
             <select id="m-role">
               <option value="sales">Sales</option>
+              <option value="finance">Finance</option>
               <option value="head">Head of Sales</option>
             </select>
           </div>
@@ -916,7 +918,7 @@ function doLogout(){
 
 function setupUI(){
   document.getElementById('sidebar-user-name').textContent=CU.name;
-  document.getElementById('sidebar-role-label').textContent={admin:'🔑 Admin',head:'👁 Head of Sales',sales:'💼 Sales'}[CU.role];
+  document.getElementById('sidebar-role-label').textContent={admin:'🔑 Admin',head:'👁 Head of Sales',sales:'💼 Sales',finance:'💰 Finance'}[CU.role];
 
   // Airtable connection status (shown in Settings page)
   const statusCard=document.getElementById('airtable-status-card');
@@ -931,12 +933,21 @@ function setupUI(){
         </div>`;
   }
 
-  // All roles can add/edit projects
-  ['nav-add-project','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+  // Finance: hide nav items not relevant to them
+  if(CU.role==='finance'){
+    ['nav-dashboard','nav-activity','nav-add-activity'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  } else {
+    // All non-finance roles can add/edit projects
+    ['nav-add-project','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+  }
 
-  // Admin-only: Settings, Members, monthly matrix
+  // Admin-only: Settings, Members
   if(CU.role==='admin'){
     ['nav-settings','nav-members'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+  }
+
+  // Admin and Finance: monthly payment matrix + year selector
+  if(CU.role==='admin'||CU.role==='finance'){
     const matSec=document.getElementById('monthly-matrix-section');
     if(matSec) matSec.style.display='block';
     const yrSel=document.getElementById('matrix-year');
@@ -951,7 +962,7 @@ function setupUI(){
       }
     }
   }
-  if(CU.role!=='sales'){
+  if(CU.role!=='sales'&&CU.role!=='finance'){
     document.getElementById('breakdown-wrap').style.display='block';
     ['f-salesname','fp-sales'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='block';});
     refreshSalesDropdowns();
@@ -993,6 +1004,13 @@ async function doLogin(){
     const ok=await verifyPasswordViaWorker('head',pass);
     if(!ok){err.textContent='Password salah';return;}
     CU={role:'head',name:'Head of Sales'};
+  } else if(role==='finance'){
+    if(!name){err.textContent='Masukkan nama kamu';return;}
+    const members=DB.get('members');
+    const matchedMember=members.find(m=>m.name.toLowerCase()===name.toLowerCase()&&m.role==='finance');
+    if(!matchedMember){err.textContent='Akun finance tidak ditemukan';return;}
+    if(pass!==matchedMember.password){err.textContent='Password salah';return;}
+    CU={role:'finance',name:matchedMember.name,memberId:matchedMember.id};
   } else {
     if(!name){err.textContent='Masukkan nama kamu';return;}
     // Per-person password check (Members table)
@@ -1011,11 +1029,12 @@ async function doLogin(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   setupUI();
-  // Load all data from Airtable, then render dashboard
-  DB.loadAll().then(()=>{ showPage('dashboard'); });
+  // Load all data from Airtable, then render starting page
+  DB.loadAll().then(()=>{ showPage(CU.role==='finance'?'projects':'dashboard'); });
 }
 function showPage(pg){
   if((pg==='settings'||pg==='members')&&CU.role!=='admin') return;
+  if(CU.role==='finance'&&(pg==='dashboard'||pg==='activity'||pg==='add-activity'||pg==='add-project')) return;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+pg).classList.add('active');
@@ -1488,10 +1507,11 @@ function renderMonthlyTable(projs){
   // Sort by date
   const sorted=[...filtered].sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1);
   const t=tod();
+  const canChangeStatus=CU.role!=='finance';
   let html=`<table>
     <thead><tr>
       <th>Client</th><th>Termin</th><th>Due Date</th><th>Nominal</th>
-      <th>Status</th><th>Keterangan</th><th>Action</th>
+      <th>Status</th><th>Keterangan</th>${canChangeStatus?'<th>Action</th>':''}
     </tr></thead><tbody>`;
   sorted.forEach(term=>{
     const s=PAY_STATUS[term.status]||PAY_STATUS['Pending'];
@@ -1503,11 +1523,11 @@ function renderMonthlyTable(projs){
       <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;white-space:nowrap">Rp ${fmtIDR(term.amount)}</td>
       <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;${s.style}">${s.label}</span></td>
       <td style="font-size:12px;color:var(--text2);max-width:160px">${term.note||'-'}</td>
-      <td>
+      ${canChangeStatus?`<td>
         <select style="background:var(--card2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px;font-family:'Sora',sans-serif;outline:none;width:130px" onchange="updateTermStatus('${term.projId}','${term.id}',this.value)">
           ${Object.keys(PAY_STATUS).map(k=>`<option value="${k}" ${k===term.status?'selected':''}>${k}</option>`).join('')}
         </select>
-      </td>
+      </td>`:''}
     </tr>`;
   });
   html+='</tbody></table>';
@@ -1888,9 +1908,9 @@ function renderProjects(){
   const allProjs=myProjs();
   renderIncomeSummary(allProjs);
   renderMonthlyTable(sorted);
-  if(CU.role==='admin') renderMonthlyMatrix();
+  if(CU.role==='admin'||CU.role==='finance') renderMonthlyMatrix();
 
-  const canEdit=true; // all roles can edit projects
+  const canEdit=CU.role!=='finance';
   const canDel=CU.role==='admin';
   const body=document.getElementById('proj-body');
   if(!sorted.length){body.innerHTML=`<div class="empty-state"><div class="icon">🚀</div><p>Belum ada project.</p></div>`;return;}
@@ -2143,10 +2163,11 @@ function renderMembers(){
     return;
   }
 
-  const roleLabel={sales:'💼 Sales',head:'👁 Head of Sales'};
+  const roleLabel={sales:'💼 Sales',head:'👁 Head of Sales',finance:'💰 Finance'};
   const roleBadgeStyle={
     sales:'background:rgba(249,115,22,.12);color:#FDBA74;border:1px solid rgba(249,115,22,.3)',
-    head:'background:rgba(59,130,246,.12);color:#93C5FD;border:1px solid rgba(59,130,246,.3)'
+    head:'background:rgba(59,130,246,.12);color:#93C5FD;border:1px solid rgba(59,130,246,.3)',
+    finance:'background:rgba(34,197,94,.12);color:#86EFAC;border:1px solid rgba(34,197,94,.3)'
   };
   el.innerHTML=members.map(m=>{
     const acts=DB.get('activities').filter(a=>(a.salesName||'').toLowerCase()===m.name.toLowerCase());
