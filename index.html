@@ -960,6 +960,8 @@ function doLogout(){
   ['nav-dashboard','nav-activity','nav-add-activity','nav-projects'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
   ['nav-add-project','nav-members','nav-settings','nav-monthly','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('breakdown-wrap').style.display='none';
+  const _fsn=document.getElementById('f-salesname');if(_fsn){_fsn.style.display='none';_fsn.value='';}
+  const _fps=document.getElementById('fp-sales');if(_fps){_fps.style.display='none';_fps.value='';}
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
   document.querySelectorAll('.pin-box').forEach(b=>{b.value='';b.classList.remove('filled');});
@@ -1017,18 +1019,25 @@ function setupUI(){
       }
     }
   }
-  if(CU.role!=='sales'&&CU.role!=='finance'){
-    document.getElementById('breakdown-wrap').style.display='block';
-    ['f-salesname','fp-sales'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='block';});
+  if(CU.role!=='finance'){
+    // Sales name filter visible for all non-finance roles
+    const fsn=document.getElementById('f-salesname');
+    if(fsn) fsn.style.display='block';
+    if(CU.role!=='sales'){
+      // Breakdown table and project sales filter only for admin/head
+      document.getElementById('breakdown-wrap').style.display='block';
+      const fps=document.getElementById('fp-sales');
+      if(fps) fps.style.display='block';
+    }
     refreshSalesDropdowns();
   }
 }
 
 function refreshSalesDropdowns(){
-  // Combine names from members list + existing activity data
   const memberNames=DB.get('members').map(m=>m.name);
   const actNames=DB.get('activities').map(a=>a.salesName).filter(Boolean);
-  const names=[...new Set([...memberNames,...actNames])].sort();
+  const projNames=DB.get('projects').map(p=>p.salesName).filter(Boolean);
+  const names=[...new Set([...memberNames,...actNames,...projNames])].sort();
   ['f-salesname','fp-sales'].forEach(id=>{
     const sel=document.getElementById(id); if(!sel)return;
     const cur=sel.value;
@@ -1074,7 +1083,14 @@ async function doLogin(){
   document.getElementById('app').style.display='block';
   setupUI();
   // Load all data from Airtable, then render starting page
-  DB.loadAll().then(()=>{ showPage(CU.role==='finance'?'projects':'dashboard'); });
+  DB.loadAll().then(()=>{
+    refreshSalesDropdowns();
+    if(CU.role==='sales'){
+      const sel=document.getElementById('f-salesname');
+      if(sel) sel.value=CU.name;
+    }
+    showPage(CU.role==='finance'?'projects':'dashboard');
+  });
 }
 function showPage(pg){
   if((pg==='settings'||pg==='members'||pg==='monthly')&&CU.role!=='admin') return;
@@ -1953,7 +1969,7 @@ function renderProjects(){
   if(q)  projs=projs.filter(p=>(p.client||'').toLowerCase().includes(q));
   if(sn) projs=projs.filter(p=>p.salesName===sn);
   if(sf==='completed') projs=projs.filter(p=>(p.terms||[]).length>0&&(p.terms||[]).every(t=>t.status==='Received'));
-  if(sf==='active')    projs=projs.filter(p=>(p.terms||[]).some(t=>t.status!=='Received'));
+  if(sf==='active')    projs=projs.filter(p=>(p.terms||[]).length===0||(p.terms||[]).some(t=>t.status!=='Received'));
   const sorted=[...projs].sort((a,b)=>b.createdAt>a.createdAt?1:-1);
 
   const allProjs=myProjs();
