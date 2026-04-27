@@ -505,6 +505,7 @@ function showToastGlobal(msg,type){ showToast(msg,type); }
       <div class="nav-item" id="nav-activity" onclick="showPage('activity')"><span class="nav-icon">📋</span>Sales Activity</div>
       <div class="nav-item" id="nav-add-activity" onclick="showPage('add-activity')"><span class="nav-icon">➕</span>Tambah Aktivitas</div>
       <div class="nav-item" id="nav-projects" onclick="showPage('projects')"><span class="nav-icon">🚀</span>Project Tracking</div>
+      <div class="nav-item" id="nav-monthly" onclick="showPage('monthly')" style="display:none"><span class="nav-icon">📅</span>Monthly Summaries</div>
       <div class="nav-item" id="nav-add-project" onclick="showPage('add-project')" style="display:none"><span class="nav-icon">📁</span>Tambah Project</div>
       <div class="nav-item" id="nav-members" onclick="showPage('members')" style="display:none"><span class="nav-icon">👥</span>Members</div>
       <div class="nav-item" id="nav-settings" onclick="showPage('settings')" style="display:none"><span class="nav-icon">⚙️</span>Settings</div>
@@ -657,6 +658,39 @@ function showToastGlobal(msg,type){ showToast(msg,type); }
       <!-- Project Cards -->
       <div class="section-title">Detail Per Project</div>
       <div id="proj-body"></div>
+    </div>
+
+    <!-- MONTHLY SUMMARIES (Admin only) -->
+    <div class="page" id="page-monthly">
+      <div class="page-header">
+        <div class="page-title">Monthly Summaries</div>
+        <div class="page-sub">Estimasi cashflow & carryover pembayaran — Admin only</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <label style="font-size:12px;color:var(--text2);text-transform:none;letter-spacing:0">Pilih Bulan:</label>
+          <input type="month" id="ms-month" onchange="renderMonthlySummaries()" style="width:180px;padding:8px 12px;font-size:13px">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="downloadMonthlySummaryPDF()" style="display:flex;align-items:center;gap:6px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PDF
+        </button>
+      </div>
+      <div id="ms-kpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:28px"></div>
+      <div style="margin-bottom:28px">
+        <div class="section-title" style="margin-top:0" id="ms-cur-title">Tagihan Bulan Ini</div>
+        <div class="table-wrap"><div id="ms-cur-table"></div></div>
+      </div>
+      <div style="margin-bottom:28px">
+        <div class="section-title" style="margin-top:0">🔴 Carryover — Invoice Belum Dibayar dari Bulan Sebelumnya</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Invoice yang sudah dikirim ke klien (status Invoice Sent) namun belum dibayar hingga bulan ini. Jika klien tidak membayar, jumlah ini akan terus terbawa ke bulan berikutnya.</div>
+        <div class="table-wrap"><div id="ms-carry-table"></div></div>
+      </div>
+      <div>
+        <div class="section-title" style="margin-top:0">⏳ Pending Belum Diinvoice dari Bulan Sebelumnya</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Termin pembayaran yang sudah jatuh tempo namun belum dibuatkan invoice (status Pending). Perlu segera diinvoice agar bisa ditagih ke klien.</div>
+        <div class="table-wrap"><div id="ms-pending-table"></div></div>
+      </div>
     </div>
 
     <!-- ADD / EDIT PROJECT -->
@@ -924,7 +958,7 @@ function doLogout(){
   CU=null;
   // Reset all nav to clean default before next login
   ['nav-dashboard','nav-activity','nav-add-activity','nav-projects'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
-  ['nav-add-project','nav-members','nav-settings','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  ['nav-add-project','nav-members','nav-settings','nav-monthly','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('breakdown-wrap').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
@@ -952,7 +986,7 @@ function setupUI(){
 
   // Reset all nav items to default state first (fixes stale DOM after logout)
   ['nav-dashboard','nav-activity','nav-add-activity','nav-projects'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
-  ['nav-add-project','nav-members','nav-settings','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  ['nav-add-project','nav-members','nav-settings','nav-monthly','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 
   // Finance: only show Project Tracking
   if(CU.role==='finance'){
@@ -962,9 +996,9 @@ function setupUI(){
     ['nav-add-project','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
   }
 
-  // Admin-only: Settings, Members
+  // Admin-only: Settings, Members, Monthly Summaries
   if(CU.role==='admin'){
-    ['nav-settings','nav-members'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+    ['nav-settings','nav-members','nav-monthly'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
   }
 
   // Admin and Finance: monthly payment matrix + year selector
@@ -1043,7 +1077,7 @@ async function doLogin(){
   DB.loadAll().then(()=>{ showPage(CU.role==='finance'?'projects':'dashboard'); });
 }
 function showPage(pg){
-  if((pg==='settings'||pg==='members')&&CU.role!=='admin') return;
+  if((pg==='settings'||pg==='members'||pg==='monthly')&&CU.role!=='admin') return;
   if(CU.role==='finance'&&(pg==='dashboard'||pg==='activity'||pg==='add-activity'||pg==='add-project')) return;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -1056,6 +1090,7 @@ function showPage(pg){
   if(pg==='activity')     renderActivityTable();
   if(pg==='projects')     renderProjects();
   if(pg==='members')      renderMembers();
+  if(pg==='monthly')      renderMonthlySummaries();
 }
 
 // ===== HELPERS =====
@@ -1597,6 +1632,7 @@ function renderMonthlyMatrix(){
         <th style="min-width:160px;position:sticky;left:0;background:var(--navy2);z-index:2">Project / Client</th>
         <th style="min-width:100px">Total Nilai</th>
         ${monthCols.map(m=>`<th class="matrix-month-col">${MONTH_NAMES[m]} ${selYear}</th>`).join('')}
+        <th class="matrix-month-col">Total Invoice</th>
         <th class="matrix-month-col">Total Received</th>
         <th class="matrix-month-col">Sisa</th>
       </tr>
@@ -1606,6 +1642,7 @@ function renderMonthlyMatrix(){
   projs.forEach(p=>{
     const totalValue=p.totalValue||0;
     const totalReceived=(p.terms||[]).filter(t=>t.status==='Received').reduce((s,t)=>s+(t.amount||0),0);
+    const totalInvoiced=(p.terms||[]).filter(t=>t.status==='Invoice Sent').reduce((s,t)=>s+(t.amount||0),0);
     const sisa=totalValue-totalReceived;
     html+=`<tr>
       <td style="position:sticky;left:0;background:var(--navy2);z-index:1">
@@ -1614,6 +1651,7 @@ function renderMonthlyMatrix(){
       </td>
      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--orange);white-space:nowrap">Rp ${fmtIDR(totalValue)}</td>
       ${monthCols.map(m=>cellHTML(projMonthAmounts(p,m))).join('')}
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--yellow);white-space:nowrap">${totalInvoiced?'Rp '+fmtIDR(totalInvoiced):'—'}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--green);white-space:nowrap">Rp ${fmtIDR(totalReceived)}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:${sisa<=0?'var(--green)':'var(--yellow)'};white-space:nowrap">Rp ${fmtIDR(sisa)}</td>
     </tr>`;
@@ -1622,6 +1660,7 @@ function renderMonthlyMatrix(){
   // Total rows
   const totalAllValue=projs.reduce((s,p)=>s+(p.totalValue||0),0);
   const totalAllReceived=projs.flatMap(p=>p.terms||[]).filter(t=>t.status==='Received').reduce((s,t)=>s+(t.amount||0),0);
+  const totalAllInvoiced=projs.flatMap(p=>p.terms||[]).filter(t=>t.status==='Invoice Sent').reduce((s,t)=>s+(t.amount||0),0);
 
   // Monthly totals per status
   function monthTotals(month, status){
@@ -1640,6 +1679,7 @@ function renderMonthlyMatrix(){
       const v=monthTotals(m,'Received');
       return `<td class="matrix-month-col" style="color:#86EFAC;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${v?'Rp '+fmtIDR(v):'—'}</td>`;
     }).join('')}
+    <td></td>
     <td style="color:#86EFAC;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;white-space:nowrap">Rp ${fmtIDR(totalAllReceived)}</td>
     <td></td>
   </tr>`;
@@ -1652,6 +1692,7 @@ function renderMonthlyMatrix(){
       const v=monthTotals(m,'Invoice Sent');
       return `<td class="matrix-month-col" style="color:#FDE047;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${v?'Rp '+fmtIDR(v):'—'}</td>`;
     }).join('')}
+    <td style="color:#FDE047;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;white-space:nowrap">Rp ${fmtIDR(totalAllInvoiced)}</td>
     <td></td><td></td>
   </tr>`;
 
@@ -1663,7 +1704,7 @@ function renderMonthlyMatrix(){
       const v=monthTotals(m,'Pending');
       return `<td class="matrix-month-col" style="color:#94A3B8;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${v?'Rp '+fmtIDR(v):'—'}</td>`;
     }).join('')}
-    <td></td><td></td>
+    <td></td><td></td><td></td>
   </tr>`;
 
   html+=`</tbody></table>`;
@@ -2160,6 +2201,357 @@ function delProj(id){
   if(!confirm('Hapus project ini?')) return;
   DB.deleteProject(id).then(()=>{ renderProjects(); toast('Project dihapus'); })
   .catch(e=>toast('Gagal hapus: '+e.message,'error'));
+}
+
+// ===== MONTHLY SUMMARIES =====
+function renderMonthlySummaries(){
+  if(CU.role!=='admin') return;
+  const msEl=document.getElementById('ms-month');
+  if(!msEl) return;
+  if(!msEl.value) msEl.value=mon();
+  const selMonth=msEl.value; // YYYY-MM
+  const [sy,sm]=selMonth.split('-').map(Number);
+  const selMonthStart=selMonth+'-01';
+  const lastDay=new Date(sy,sm,0).getDate();
+  const selMonthEnd=`${selMonth}-${String(lastDay).padStart(2,'0')}`;
+
+  const projs=DB.get('projects');
+  const allTerms=projs.flatMap(p=>(p.terms||[]).map(t=>({...t,client:p.client,salesName:p.salesName,projId:p.id})));
+
+  // Terms due in the selected month
+  const curTerms=allTerms.filter(t=>t.dueDate&&t.dueDate>=selMonthStart&&t.dueDate<=selMonthEnd);
+  // Carryover: invoice already sent to client but not paid, due before selected month
+  // Also includes Invoice Sent terms with no dueDate (undated = outstanding)
+  const carryTerms=allTerms.filter(t=>t.status==='Invoice Sent'&&(!t.dueDate||t.dueDate<selMonthStart));
+  // Pending belum diinvoice: terms that are past due but still Pending (no invoice sent yet)
+  const pendingOldTerms=allTerms.filter(t=>t.status==='Pending'&&(!t.dueDate||t.dueDate<selMonthStart));
+
+  const curReceived=curTerms.filter(t=>t.status==='Received').reduce((s,t)=>s+(t.amount||0),0);
+  const curInvoiced=curTerms.filter(t=>t.status==='Invoice Sent').reduce((s,t)=>s+(t.amount||0),0);
+  const curPending=curTerms.filter(t=>t.status==='Pending').reduce((s,t)=>s+(t.amount||0),0);
+  const carryTotal=carryTerms.reduce((s,t)=>s+(t.amount||0),0);
+  const pendingOldTotal=pendingOldTerms.reduce((s,t)=>s+(t.amount||0),0);
+  // Optimistic estimate: already received + invoiced (client may still pay this month)
+  const estimatedReceived=curReceived+curInvoiced;
+  // Worst-case next month risk: if invoiced & pending this month + carryover + past pending all unsettled
+  const nextMonthRisk=curInvoiced+curPending+carryTotal+pendingOldTotal;
+
+  const MONTH_NAMES_FULL=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const monthLabel=MONTH_NAMES_FULL[sm-1]+' '+sy;
+  const titleEl=document.getElementById('ms-cur-title');
+  if(titleEl) titleEl.textContent='Tagihan '+monthLabel;
+
+  // KPI cards
+  document.getElementById('ms-kpi').innerHTML=[
+    {label:'Estimasi Received Bulan Ini',hint:'Received + Invoice Sent (optimistis)',val:estimatedReceived,c:'var(--green)'},
+    {label:'Sudah Diterima',hint:'Status: Received',val:curReceived,c:'var(--green)'},
+    {label:'Invoice Sent',hint:'Sudah diinvoice, menunggu bayar',val:curInvoiced,c:'var(--yellow)'},
+    {label:'Pending Bulan Ini',hint:'Belum diinvoice bulan ini',val:curPending,c:'var(--text2)'},
+    {label:'Carryover Invoice Belum Bayar',hint:'Invoice Sent dari bulan sebelumnya, belum dibayar',val:carryTotal,c:'var(--red)'},
+    {label:'Pending Belum Diinvoice',hint:'Termin jatuh tempo bulan lalu, belum dibuatkan invoice',val:pendingOldTotal,c:'var(--yellow)'},
+    {label:'Risk Bulan Depan',hint:'Total semua yang belum settle jika tidak ada pembayaran',val:nextMonthRisk,c:'var(--orange)'},
+  ].map(s=>`<div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius2);padding:18px 20px;display:flex;flex-direction:column;gap:8px;min-height:110px;min-width:0">
+    <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;line-height:1.4">${s.label}</div>
+    <div style="font-size:15px;font-weight:700;color:${s.c};font-family:'JetBrains Mono',monospace;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Rp ${fmtIDR(s.val)}">Rp ${fmtIDR(s.val)}</div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.4;margin-top:auto">${s.hint}</div>
+  </div>`).join('');
+
+  // Current month terms table
+  const curEl=document.getElementById('ms-cur-table');
+  if(!curTerms.length){
+    curEl.innerHTML=`<div class="empty-state" style="padding:24px"><div class="icon">📅</div><p>Tidak ada tagihan di ${monthLabel}.</p></div>`;
+  } else {
+    const sorted=[...curTerms].sort((a,b)=>(a.dueDate||'')>(b.dueDate||'')?1:-1);
+    const today=tod();
+    let h=`<table><thead><tr><th>Client</th><th>Termin</th><th>Due Date</th><th>Nominal</th><th>Status</th></tr></thead><tbody>`;
+    sorted.forEach(t=>{
+      const s=PAY_STATUS[t.status]||PAY_STATUS['Pending'];
+      const isOver=t.status!=='Received'&&t.dueDate&&t.dueDate<today;
+      h+=`<tr style="${isOver?'background:rgba(239,68,68,.04)':''}">
+        <td><div class="td-main">${t.client||'-'}</div><div class="td-sub">${t.salesName||''}</div></td>
+        <td style="font-size:13px">${t.label||'-'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;${isOver?'color:var(--red)':''}">${fmtDate(t.dueDate)}${isOver?' ⚠️':''}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;white-space:nowrap">Rp ${fmtIDR(t.amount)}</td>
+        <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;${s.style}">${s.label}</span></td>
+      </tr>`;
+    });
+    // Summary row
+    h+=`<tr style="border-top:2px solid var(--border2)">
+      <td colspan="3" style="font-weight:600;font-size:12px;color:var(--text2)">Total ${monthLabel}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;white-space:nowrap;color:var(--orange)">Rp ${fmtIDR(curReceived+curInvoiced+curPending)}</td>
+      <td></td>
+    </tr>`;
+    h+='</tbody></table>';
+    curEl.innerHTML=h;
+  }
+
+  // Carryover table — grouped by client with per-term breakdown
+  const carryEl=document.getElementById('ms-carry-table');
+  if(!carryTerms.length){
+    carryEl.innerHTML=`<div class="empty-state" style="padding:24px"><div class="icon">✅</div><p>Tidak ada carryover — semua tagihan lama sudah terbayar!</p></div>`;
+  } else {
+    // Group by client, sort each group by dueDate asc
+    const groups={};
+    carryTerms.forEach(t=>{
+      const key=t.client||'Unknown';
+      if(!groups[key]) groups[key]={client:t.client,salesName:t.salesName,terms:[]};
+      groups[key].terms.push(t);
+    });
+    // Sort groups by descending subtotal so biggest exposure is on top
+    const groupList=Object.values(groups).sort((a,b)=>{
+      const sa=a.terms.reduce((s,t)=>s+(t.amount||0),0);
+      const sb=b.terms.reduce((s,t)=>s+(t.amount||0),0);
+      return sb-sa;
+    });
+    groupList.forEach(g=>g.terms.sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1));
+
+    function daysOverdue(dueDate){
+      if(!dueDate) return null;
+      const diff=Math.floor((new Date(tod())-new Date(dueDate))/(1000*60*60*24));
+      return diff>0?diff:null;
+    }
+
+    let h=`<table style="min-width:unset">
+      <thead><tr>
+        <th style="min-width:180px">Project / Client</th>
+        <th>Termin</th>
+        <th>Due Date</th>
+        <th style="text-align:right">Hari Terlambat</th>
+        <th style="text-align:right">Nominal</th>
+        <th style="text-align:right">% dari Total</th>
+      </tr></thead><tbody>`;
+
+    groupList.forEach(g=>{
+      const subtotal=g.terms.reduce((s,t)=>s+(t.amount||0),0);
+      const pct=carryTotal?Math.round(subtotal/carryTotal*100):0;
+      // Client header row
+      h+=`<tr style="background:rgba(239,68,68,.08);border-top:1px solid rgba(239,68,68,.25)">
+        <td colspan="4" style="padding:10px 16px">
+          <div style="font-weight:700;font-size:13px;color:var(--text)">${g.client||'Unknown'}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${g.salesName||''} &nbsp;·&nbsp; ${g.terms.length} termin belum dibayar</div>
+        </td>
+        <td style="padding:10px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--red);white-space:nowrap">Rp ${fmtIDR(subtotal)}</td>
+        <td style="padding:10px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--orange)">${pct}%</td>
+      </tr>`;
+      // Per-term rows
+      g.terms.forEach(t=>{
+        const overdueDays=daysOverdue(t.dueDate);
+        const termPct=carryTotal?Math.round((t.amount||0)/carryTotal*100):0;
+        h+=`<tr style="background:rgba(239,68,68,.02)">
+          <td style="padding:8px 16px 8px 28px;font-size:12px;color:var(--text3)">↳</td>
+          <td style="padding:8px 12px;font-size:13px;color:var(--text)">${t.label||'-'}</td>
+          <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;${t.dueDate?'color:var(--red)':'color:var(--text3)'}">${t.dueDate?fmtDate(t.dueDate):'Tidak ada due date'}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;${overdueDays?'color:var(--red)':'color:var(--text3)'}">${overdueDays?overdueDays+' hari':'—'}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap">Rp ${fmtIDR(t.amount)}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)">${termPct>0?termPct+'%':'<1%'}</td>
+        </tr>`;
+      });
+    });
+
+    // Grand total row
+    h+=`<tr style="border-top:2px solid rgba(239,68,68,.4);background:rgba(239,68,68,.08)">
+      <td colspan="4" style="padding:12px 16px;font-weight:700;font-size:13px;color:var(--red)">🔴 Total Carryover — ${groupList.length} client</td>
+      <td style="padding:12px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--red);white-space:nowrap">Rp ${fmtIDR(carryTotal)}</td>
+      <td style="padding:12px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text2)">100%</td>
+    </tr>`;
+    h+='</tbody></table>';
+    carryEl.innerHTML=h;
+  }
+
+  // Pending belum diinvoice table — grouped by client
+  const pendingEl=document.getElementById('ms-pending-table');
+  if(!pendingOldTerms.length){
+    pendingEl.innerHTML=`<div class="empty-state" style="padding:24px"><div class="icon">✅</div><p>Tidak ada termin pending dari bulan sebelumnya — semua sudah diinvoice!</p></div>`;
+  } else {
+    const pGroups={};
+    pendingOldTerms.forEach(t=>{
+      const key=t.client||'Unknown';
+      if(!pGroups[key]) pGroups[key]={client:t.client,salesName:t.salesName,terms:[]};
+      pGroups[key].terms.push(t);
+    });
+    const pGroupList=Object.values(pGroups).sort((a,b)=>{
+      const sa=a.terms.reduce((s,t)=>s+(t.amount||0),0);
+      const sb=b.terms.reduce((s,t)=>s+(t.amount||0),0);
+      return sb-sa;
+    });
+    pGroupList.forEach(g=>g.terms.sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1));
+
+    function daysOverduePend(dueDate){
+      if(!dueDate) return null;
+      const diff=Math.floor((new Date(tod())-new Date(dueDate))/(1000*60*60*24));
+      return diff>0?diff:null;
+    }
+
+    let ph=`<table style="min-width:unset">
+      <thead><tr>
+        <th style="min-width:180px">Project / Client</th>
+        <th>Termin</th>
+        <th>Due Date</th>
+        <th style="text-align:right">Hari Terlambat</th>
+        <th style="text-align:right">Nominal</th>
+        <th style="text-align:right">% dari Total</th>
+      </tr></thead><tbody>`;
+
+    pGroupList.forEach(g=>{
+      const subtotal=g.terms.reduce((s,t)=>s+(t.amount||0),0);
+      const pct=pendingOldTotal?Math.round(subtotal/pendingOldTotal*100):0;
+      ph+=`<tr style="background:rgba(234,179,8,.08);border-top:1px solid rgba(234,179,8,.2)">
+        <td colspan="4" style="padding:10px 16px">
+          <div style="font-weight:700;font-size:13px;color:var(--text)">${g.client||'Unknown'}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${g.salesName||''} &nbsp;·&nbsp; ${g.terms.length} termin belum diinvoice</div>
+        </td>
+        <td style="padding:10px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--yellow);white-space:nowrap">Rp ${fmtIDR(subtotal)}</td>
+        <td style="padding:10px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--orange)">${pct}%</td>
+      </tr>`;
+      g.terms.forEach(t=>{
+        const overdueDays=daysOverduePend(t.dueDate);
+        const termPct=pendingOldTotal?Math.round((t.amount||0)/pendingOldTotal*100):0;
+        ph+=`<tr style="background:rgba(234,179,8,.02)">
+          <td style="padding:8px 16px 8px 28px;font-size:12px;color:var(--text3)">↳</td>
+          <td style="padding:8px 12px;font-size:13px;color:var(--text)">${t.label||'-'}</td>
+          <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;${t.dueDate?'color:var(--yellow)':'color:var(--text3)'}">${t.dueDate?fmtDate(t.dueDate):'Tidak ada due date'}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;${overdueDays?'color:var(--yellow)':'color:var(--text3)'}">${overdueDays?overdueDays+' hari':'—'}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap">Rp ${fmtIDR(t.amount)}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)">${termPct>0?termPct+'%':'<1%'}</td>
+        </tr>`;
+      });
+    });
+
+    ph+=`<tr style="border-top:2px solid rgba(234,179,8,.4);background:rgba(234,179,8,.08)">
+      <td colspan="4" style="padding:12px 16px;font-weight:700;font-size:13px;color:var(--yellow)">⏳ Total Pending Belum Diinvoice — ${pGroupList.length} client</td>
+      <td style="padding:12px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--yellow);white-space:nowrap">Rp ${fmtIDR(pendingOldTotal)}</td>
+      <td style="padding:12px 16px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text2)">100%</td>
+    </tr>`;
+    ph+='</tbody></table>';
+    pendingEl.innerHTML=ph;
+  }
+}
+
+function downloadMonthlySummaryPDF(){
+  const msEl=document.getElementById('ms-month');
+  if(!msEl||!msEl.value){toast('Pilih bulan terlebih dahulu','error');return;}
+  const selMonth=msEl.value;
+  const [sy,sm]=selMonth.split('-').map(Number);
+  const MONTH_NAMES_FULL=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const monthLabel=MONTH_NAMES_FULL[sm-1]+' '+sy;
+  const generatedDate=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+
+  const projs=DB.get('projects');
+  const selMonthStart=selMonth+'-01';
+  const lastDay=new Date(sy,sm,0).getDate();
+  const selMonthEnd=`${selMonth}-${String(lastDay).padStart(2,'0')}`;
+  const allTerms=projs.flatMap(p=>(p.terms||[]).map(t=>({...t,client:p.client,salesName:p.salesName})));
+
+  const curTerms=allTerms.filter(t=>t.dueDate&&t.dueDate>=selMonthStart&&t.dueDate<=selMonthEnd);
+  const carryTerms=allTerms.filter(t=>t.status==='Invoice Sent'&&(!t.dueDate||t.dueDate<selMonthStart));
+  const pendingOldTerms=allTerms.filter(t=>t.status==='Pending'&&(!t.dueDate||t.dueDate<selMonthStart));
+
+  const curReceived=curTerms.filter(t=>t.status==='Received').reduce((s,t)=>s+(t.amount||0),0);
+  const curInvoiced=curTerms.filter(t=>t.status==='Invoice Sent').reduce((s,t)=>s+(t.amount||0),0);
+  const curPending=curTerms.filter(t=>t.status==='Pending').reduce((s,t)=>s+(t.amount||0),0);
+  const carryTotal=carryTerms.reduce((s,t)=>s+(t.amount||0),0);
+  const pendingOldTotal=pendingOldTerms.reduce((s,t)=>s+(t.amount||0),0);
+  const estimatedReceived=curReceived+curInvoiced;
+  const nextMonthRisk=curInvoiced+curPending+carryTotal+pendingOldTotal;
+
+  function fmtD(d){if(!d)return'—';const[y,m,day]=d.split('-');const mn=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];return`${+day} ${mn[+m-1]} ${y}`;}
+  function overdueDays(d){if(!d)return null;const diff=Math.floor((new Date()-new Date(d))/(864e5));return diff>0?diff:null;}
+
+  function groupRows(terms, total, accentColor){
+    const groups={};
+    terms.forEach(t=>{const k=t.client||'Unknown';if(!groups[k])groups[k]={client:t.client,salesName:t.salesName,terms:[]};groups[k].terms.push(t);});
+    const list=Object.values(groups).sort((a,b)=>b.terms.reduce((s,t)=>s+(t.amount||0),0)-a.terms.reduce((s,t)=>s+(t.amount||0),0));
+    let rows='';
+    list.forEach(g=>{
+      const sub=g.terms.reduce((s,t)=>s+(t.amount||0),0);
+      rows+=`<tr style="background:#f1f5f9"><td colspan="4"><strong>${g.client}</strong> <span style="color:#64748b;font-size:10px">${g.salesName||''}</span></td>
+        <td style="text-align:right;font-weight:700;color:${accentColor};font-family:'Courier New',monospace">Rp ${fmtIDR(sub)}</td>
+        <td style="text-align:right;color:#64748b;font-size:10px">${total?Math.round(sub/total*100):0}%</td></tr>`;
+      g.terms.sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1).forEach(t=>{
+        const od=overdueDays(t.dueDate);
+        rows+=`<tr><td style="padding-left:24px;color:#94a3b8">↳</td>
+          <td>${t.label||'-'}</td>
+          <td style="font-family:'Courier New',monospace;font-size:10px">${t.dueDate?fmtD(t.dueDate):'Tidak ada due date'}</td>
+          <td style="font-family:'Courier New',monospace;font-size:10px;color:${od?'#dc2626':'#94a3b8'}">${od?od+' hari':'—'}</td>
+          <td style="text-align:right;font-family:'Courier New',monospace;font-size:11px">Rp ${fmtIDR(t.amount)}</td>
+          <td style="text-align:right;font-size:10px;color:#94a3b8">${total?Math.round((t.amount||0)/total*100):0}%</td></tr>`;
+      });
+    });
+    rows+=`<tr style="border-top:2px solid #cbd5e1;font-weight:700">
+      <td colspan="4">Total (${list.length} client)</td>
+      <td style="text-align:right;font-family:'Courier New',monospace;color:${accentColor}">Rp ${fmtIDR(total)}</td>
+      <td style="text-align:right">100%</td></tr>`;
+    return rows;
+  }
+
+  function curRows(){
+    if(!curTerms.length) return '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:16px">Tidak ada tagihan</td></tr>';
+    const sorted=[...curTerms].sort((a,b)=>(a.dueDate||'')>(b.dueDate||'')?1:-1);
+    const PAY={Received:'#16a34a','Invoice Sent':'#d97706',Pending:'#64748b'};
+    return sorted.map(t=>`<tr>
+      <td><strong>${t.client}</strong><br><span style="color:#64748b;font-size:10px">${t.salesName||''}</span></td>
+      <td>${t.label||'-'}</td>
+      <td style="font-family:'Courier New',monospace;font-size:10px">${fmtD(t.dueDate)}</td>
+      <td style="text-align:right;font-family:'Courier New',monospace">Rp ${fmtIDR(t.amount)}</td>
+      <td><span style="color:${PAY[t.status]||'#64748b'};font-weight:600">${t.status}</span></td>
+    </tr>`).join('');
+  }
+
+  const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
+<title>Monthly Summary ${monthLabel}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a2e;background:#fff;padding:28px 32px;}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #0B1628;}
+  .logo-row{display:flex;align-items:center;gap:10px;}
+  .logo-dot{width:28px;height:28px;background:#F97316;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;}
+  .company{font-size:15px;font-weight:700;color:#0B1628;}.company em{color:#F97316;font-style:normal;}
+  .report-title{text-align:right;}.report-title h1{font-size:17px;font-weight:700;color:#0B1628;margin-bottom:3px;}
+  .report-title p{font-size:10px;color:#64748B;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+  .kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;}
+  .kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:4px;line-height:1.4;}
+  .kpi-val{font-size:15px;font-weight:700;font-family:'Courier New',monospace;line-height:1.2;}
+  .kpi-hint{font-size:9px;color:#94a3b8;margin-top:4px;line-height:1.4;}
+  .section{margin-bottom:20px;}
+  .section-title{font-size:12px;font-weight:700;color:#0B1628;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #e2e8f0;}
+  table{width:100%;border-collapse:collapse;margin-bottom:4px;}
+  th{background:#0B1628;color:#F1F5F9;padding:7px 10px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  td{padding:7px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .footer{margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8;}
+  @media print{body{padding:14px;}@page{size:A4 portrait;margin:14mm;}}
+</style></head><body>
+<div class="header">
+  <div class="logo-row"><div class="logo-dot">S</div><div><div class="company">Sprout <em>Sales</em> Tracker</div><div style="font-size:9px;color:#64748B">Internal Report</div></div></div>
+  <div class="report-title"><h1>Monthly Summary</h1><p>${monthLabel} &nbsp;·&nbsp; Dibuat: ${generatedDate}</p></div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">Estimasi Received</div><div class="kpi-val" style="color:#16a34a">Rp ${fmtIDR(estimatedReceived)}</div><div class="kpi-hint">Received + Invoice Sent</div></div>
+  <div class="kpi"><div class="kpi-label">Sudah Diterima</div><div class="kpi-val" style="color:#16a34a">Rp ${fmtIDR(curReceived)}</div><div class="kpi-hint">Status Received bulan ini</div></div>
+  <div class="kpi"><div class="kpi-label">Invoice Sent</div><div class="kpi-val" style="color:#d97706">Rp ${fmtIDR(curInvoiced)}</div><div class="kpi-hint">Menunggu bayar bulan ini</div></div>
+  <div class="kpi"><div class="kpi-label">Pending Bulan Ini</div><div class="kpi-val" style="color:#64748b">Rp ${fmtIDR(curPending)}</div><div class="kpi-hint">Belum diinvoice bulan ini</div></div>
+  <div class="kpi"><div class="kpi-label">Carryover Invoice</div><div class="kpi-val" style="color:#dc2626">Rp ${fmtIDR(carryTotal)}</div><div class="kpi-hint">Invoice Sent belum bayar</div></div>
+  <div class="kpi"><div class="kpi-label">Pending Belum Invoice</div><div class="kpi-val" style="color:#d97706">Rp ${fmtIDR(pendingOldTotal)}</div><div class="kpi-hint">Termin lama belum diinvoice</div></div>
+  <div class="kpi" style="grid-column:span 2"><div class="kpi-label">Risk Bulan Depan</div><div class="kpi-val" style="color:#F97316">Rp ${fmtIDR(nextMonthRisk)}</div><div class="kpi-hint">Total jika tidak ada pembayaran sama sekali</div></div>
+</div>
+<div class="section"><div class="section-title">Tagihan ${monthLabel}</div>
+  <table><thead><tr><th>Client</th><th>Termin</th><th>Due Date</th><th style="text-align:right">Nominal</th><th>Status</th></tr></thead>
+  <tbody>${curRows()}</tbody></table></div>
+<div class="section"><div class="section-title">🔴 Carryover — Invoice Belum Dibayar</div>
+  ${carryTerms.length?`<table><thead><tr><th>Client / Termin</th><th>Termin</th><th>Due Date</th><th>Hari Terlambat</th><th style="text-align:right">Nominal</th><th style="text-align:right">%</th></tr></thead><tbody>${groupRows(carryTerms,carryTotal,'#dc2626')}</tbody></table>`:'<p style="color:#94a3b8;padding:8px 0">Tidak ada carryover.</p>'}
+</div>
+<div class="section"><div class="section-title">⏳ Pending Belum Diinvoice</div>
+  ${pendingOldTerms.length?`<table><thead><tr><th>Client / Termin</th><th>Termin</th><th>Due Date</th><th>Hari Terlambat</th><th style="text-align:right">Nominal</th><th style="text-align:right">%</th></tr></thead><tbody>${groupRows(pendingOldTerms,pendingOldTotal,'#d97706')}</tbody></table>`:'<p style="color:#94a3b8;padding:8px 0">Tidak ada pending lama.</p>'}
+</div>
+<div class="footer"><span>Sprout Sales Tracker &nbsp;·&nbsp; Confidential</span><span>Dicetak: ${generatedDate}</span></div>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`;
+
+  const win=window.open('','_blank','width=900,height:1100');
+  win.document.write(html);
+  win.document.close();
+  toast('PDF Monthly Summary siap di-print ✓','success');
 }
 
 // ===== MEMBERS CRUD =====
