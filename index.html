@@ -998,9 +998,14 @@ function setupUI(){
     ['nav-add-project','btn-add-proj'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
   }
 
-  // Admin-only: Settings, Members, Monthly Summaries
+  // Admin-only: Settings, Members
   if(CU.role==='admin'){
     ['nav-settings','nav-members','nav-monthly'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='flex';});
+  }
+  // Finance also gets Monthly Summaries
+  if(CU.role==='finance'){
+    const navMonthly=document.getElementById('nav-monthly');
+    if(navMonthly) navMonthly.style.display='flex';
   }
 
   // Admin and Finance: monthly payment matrix + year selector
@@ -1093,7 +1098,8 @@ async function doLogin(){
   });
 }
 function showPage(pg){
-  if((pg==='settings'||pg==='members'||pg==='monthly')&&CU.role!=='admin') return;
+  if((pg==='settings'||pg==='members')&&CU.role!=='admin') return;
+  if(pg==='monthly'&&CU.role!=='admin'&&CU.role!=='finance') return;
   if(CU.role==='finance'&&(pg==='dashboard'||pg==='activity'||pg==='add-activity'||pg==='add-project')) return;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -2221,7 +2227,7 @@ function delProj(id){
 
 // ===== MONTHLY SUMMARIES =====
 function renderMonthlySummaries(){
-  if(CU.role!=='admin') return;
+  if(CU.role!=='admin'&&CU.role!=='finance') return;
   const msEl=document.getElementById('ms-month');
   if(!msEl) return;
   if(!msEl.value) msEl.value=mon();
